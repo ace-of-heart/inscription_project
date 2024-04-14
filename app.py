@@ -2,6 +2,10 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
+@app.route('/')
+def indexPage():
+  return render_template('home.html')
+  
 @app.route('/home')
 def homePage():
   return render_template('home.html')
@@ -10,9 +14,9 @@ def homePage():
 def history():
   return render_template('history.html')
 
-@app.route('/translate')
+@app.route('/inscription')
 def translate():
-  return render_template('translate.html')
+  return render_template('inscription.html')
 
 @app.route('/faqs')
 def faqs():
