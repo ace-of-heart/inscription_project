@@ -25,13 +25,13 @@
       opacity: 0.5;
     }
   </style>
-  <title>Model 01</title>
+  <title>Symbol Converter</title>
 </head>
 <body>
   {% include 'navbar.html' %}
   <div>
     <div class="pricing-header p-3 pb-md-4 mx-auto text-center">
-      <h1>'Model 01' Symbol Converter</h1>
+      <h1>Black Background Symbol Converter</h1>
       <br>
     </div>
   </div>
@@ -49,6 +49,28 @@
     <div>
       <img id="uploadedImage" style="max-width: 100%; display: none;" />
     </div>
+    <!-- Zoom -->
+    <!-- ========================================================================================= -->
+
+      <div id="zoomControls" class="center" style="display: none;">
+        <div class="center">
+        <button id="zoomInButton" class="btn btn-secondary">Zoom In</button>
+        <button id="zoomOutButton" class="btn btn-secondary">Zoom Out</button>
+        <input type="range" id="zoomRange" min="0.1" max="10" step="0.1" value="1" class="form-range">
+        </div>
+    </div>
+     <!-- ========================================================================================= -->
+    
+    <!-- Rotate -->
+    <!-- ========================================================================================= -->
+    <div id="rotationControls" class="center" style="display: none;">
+      <div class="center">
+        <button id="rotateLeftButton" class="btn btn-secondary">Rotate Left</button>
+        <button id="rotateRightButton" class="btn btn-secondary">Rotate Right</button>
+        </div>
+        <input type="range" id="rotateRange" min="-180" max="180" value="0" class="form-range">
+    </div>
+    <!-- ========================================================================================= -->
     <div>
       <button id="cropButton" class="btn btn-primary" style="display: none;">Crop Image</button>
     </div>
@@ -57,7 +79,17 @@
     </div>
     <div>
       <button id="uploadButton" class="btn btn-success" style="display: none;">Upload Cropped Image</button>
+
     </div>
+    
+    <!-- Display predicted output letter -->
+    <div id="predictionResult" style="display: none;">
+      <h3>Predicted Output Letter:</h3>
+      <p id="predictedLetter" style="font-size: 36px;">></p>
+    </div>
+    </div>
+
+
   </div>
 
   {% include 'footer.html' %}
@@ -73,7 +105,61 @@
     const uploadButton = document.getElementById('uploadButton');
     const croppedImageCanvas = document.getElementById('croppedImage');
     const uploadImageButton = document.getElementById('uploadImageButton');
+    
+//rotation
+    // =========================================================================================
+    document.getElementById('rotateLeftButton').addEventListener('click', function() {
+        cropper.rotate(-45); // Adjust the angle as per your need
+    });
 
+    document.getElementById('rotateRightButton').addEventListener('click', function() {
+        cropper.rotate(45); // Adjust the angle as per your need
+    });
+
+    document.getElementById('rotateRange').addEventListener('input', function() {
+        cropper.rotateTo(parseInt(this.value)); // Adjust the image to the angle from slider
+    });
+
+    // =========================================================================================
+
+    //zoom
+    // =========================================================================================
+
+    document.getElementById('zoomInButton').addEventListener('click', function() {
+        cropper.zoom(0.1); // Increase the zoom level by 0.1
+    });
+
+    document.getElementById('zoomOutButton').addEventListener('click', function() {
+        cropper.zoom(-0.1); // Decrease the zoom level by 0.1
+    });
+
+    document.getElementById('zoomRange').addEventListener('input', function() {
+        const zoomValue = parseFloat(this.value);
+        cropper.zoomTo(zoomValue); // Set the zoom level based on the slider value
+    });
+    
+
+
+    // =========================================================================================
+    
+    // cropper.on('zoom', function(event) {
+    //     const containerData = cropper.getContainerData();
+    //     const cropBoxData = cropper.getCropBoxData();
+
+    //     // Calculate the scaled image dimensions
+    //     const scaledImageWidth = cropBoxData.width * event.detail.ratio;
+    //     const scaledImageHeight = cropBoxData.height * event.detail.ratio;
+
+    //     // Check if the scaled image dimensions are larger than the container
+    //     if (scaledImageWidth > containerData.width || scaledImageHeight > containerData.height) {
+    //         cropper.setDragMode('move'); // Enable panning if the scaled image is larger than the container
+    //     } else {
+    //         cropper.setDragMode('none'); // Disable panning if the scaled image fits within the container
+    //     }
+    // });
+
+
+    
     imageInput.addEventListener('change', function(event) {
         const file = event.target.files[0];
         if (!file) {
@@ -91,9 +177,16 @@
             }
 
             cropper = new Cropper(uploadedImage, {
-                aspectRatio: 1, // Adjust as needed
-                viewMode: 1,
+              aspectRatio: 1, // Adjust as needed
+              viewMode: 1,
+              movable: true, // Enable image panning
+              zoomable: true, // Enable image zooming
             });
+
+            // Show rotation controls only after image is loaded into the cropper
+            document.getElementById('rotationControls').style.display = 'block';
+            // Show zoom controls only after image is loaded into the cropper
+            document.getElementById('zoomControls').style.display = 'block';
         };
 
         reader.readAsDataURL(file);
@@ -101,15 +194,16 @@
 
 
     cropButton.addEventListener('click', function() {
-      const croppedCanvas = cropper.getCroppedCanvas();
-      croppedImageCanvas.style.display = 'block';
-      croppedImageCanvas.width = croppedCanvas.width;
-      croppedImageCanvas.height = croppedCanvas.height;
-      const ctx = croppedImageCanvas.getContext('2d');
-      ctx.clearRect(0, 0, croppedImageCanvas.width, croppedImageCanvas.height);
-      ctx.drawImage(croppedCanvas, 0, 0);
-      uploadButton.style.display = 'inline-block'; // Show the upload button after cropping
+        const croppedCanvas = cropper.getCroppedCanvas();
+        croppedImageCanvas.style.display = 'block';
+        croppedImageCanvas.width = croppedCanvas.width;
+        croppedImageCanvas.height = croppedCanvas.height;
+        const ctx = croppedImageCanvas.getContext('2d');
+        ctx.clearRect(0, 0, croppedImageCanvas.width, croppedImageCanvas.height);
+        ctx.drawImage(croppedCanvas, 0, 0);
+        uploadButton.style.display = 'inline-block'; // Show the upload button after cropping
     });
+
 
     uploadButton.addEventListener('click', function() {
       const smallCanvas = document.createElement('canvas');
@@ -129,6 +223,9 @@
         .then(response => response.json())
         .then(data => {
           console.log(data);
+          // Update the HTML content with the predicted output letter
+          document.getElementById('predictedLetter').innerText = data.prediction;
+          document.getElementById('predictionResult').style.display = 'block'; // Show the prediction result
         })
         .catch(error => {
           console.error(error);

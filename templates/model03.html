@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap import -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+  <style>
+    .center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 50%;
+    }
+
+    .backImage {
+      background-image: url("static/cover1.jpg");
+      background-color: #cccccc;
+      height: 500px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      position: relative;
+      opacity: 0.5;
+    }
+  </style>
+  <title>Model 03</title>
+</head>
+<body>
+  {% include 'navbar.html' %}
+  <div>
+    <div class="pricing-header p-3 pb-md-4 mx-auto text-center">
+      <h1>Word Convertor</h1>
+      <br>
+    </div>
+  </div>
+
+  <div class="container">
+    <form id="upload-form" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="imageInput" class="form-label">Upload Image</label>
+        <input class="form-control" type="file" id="imageInput" accept="image/*">
+      </div>
+      <!-- <div>
+        <button id="uploadImageButton" class="btn btn-primary">Upload Image</button>
+      </div> -->
+    </form>
+    <div>
+      <img id="uploadedImage" style="max-width: 100%; display: none;" />
+    </div>
+    <!-- Zoom -->
+    <!-- ========================================================================================= -->
+
+    <div id="zoomControls" style="display: none;">
+        <button id="zoomInButton" class="btn btn-secondary">Zoom In</button>
+        <button id="zoomOutButton" class="btn btn-secondary">Zoom Out</button>
+        <input type="range" id="zoomRange" min="0.1" max="10" step="0.1" value="1" class="form-range">
+    </div>
+     <!-- ========================================================================================= -->
+    
+    <!-- Rotate -->
+    <!-- ========================================================================================= -->
+    <div id="rotationControls" class="center" style="display: none;">
+      <div class="center">
+        <button id="rotateLeftButton" class="btn btn-secondary">Rotate Left</button>
+        <button id="rotateRightButton" class="btn btn-secondary">Rotate Right</button>
+        </div>
+        <input type="range" id="rotateRange" min="-180" max="180" value="0" class="form-range">
+    </div>
+    <!-- ========================================================================================= -->
+    <div>
+      <button id="cropButton" class="btn btn-primary" style="display: none;">Crop Image</button>
+    </div>
+    <div>
+      <canvas id="croppedImage" style="display: none;"></canvas>
+    </div>
+    <div>
+      <button id="uploadButton" class="btn btn-success" style="display: none;">Upload Cropped Image</button>
+
+    </div>
+
+
+  </div>
+
+  {% include 'footer.html' %}
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script>
+    let cropper;
+    const imageInput = document.getElementById('imageInput');
+    const uploadedImage = document.getElementById('uploadedImage');
+    const cropButton = document.getElementById('cropButton');
+    const uploadButton = document.getElementById('uploadButton');
+    const croppedImageCanvas = document.getElementById('croppedImage');
+    const uploadImageButton = document.getElementById('uploadImageButton');
+    
+//rotation
+    // =========================================================================================
+    document.getElementById('rotateLeftButton').addEventListener('click', function() {
+        cropper.rotate(-45); // Adjust the angle as per your need
+    });
+
+    document.getElementById('rotateRightButton').addEventListener('click', function() {
+        cropper.rotate(45); // Adjust the angle as per your need
+    });
+
+    document.getElementById('rotateRange').addEventListener('input', function() {
+        cropper.rotateTo(parseInt(this.value)); // Adjust the image to the angle from slider
+    });
+
+    // =========================================================================================
+
+    //zoom
+    // =========================================================================================
+
+    document.getElementById('zoomInButton').addEventListener('click', function() {
+        cropper.zoom(0.1); // Increase the zoom level by 0.1
+    });
+
+    document.getElementById('zoomOutButton').addEventListener('click', function() {
+        cropper.zoom(-0.1); // Decrease the zoom level by 0.1
+    });
+
+    document.getElementById('zoomRange').addEventListener('input', function() {
+        const zoomValue = parseFloat(this.value);
+        cropper.zoomTo(zoomValue); // Set the zoom level based on the slider value
+    });
+    
+
+
+    // =========================================================================================
+    
+    cropper.on('zoom', function(event) {
+        const containerData = cropper.getContainerData();
+        const cropBoxData = cropper.getCropBoxData();
+
+        // Calculate the scaled image dimensions
+        const scaledImageWidth = cropBoxData.width * event.detail.ratio;
+        const scaledImageHeight = cropBoxData.height * event.detail.ratio;
+
+        // Check if the scaled image dimensions are larger than the container
+        if (scaledImageWidth > containerData.width || scaledImageHeight > containerData.height) {
+            cropper.setDragMode('move'); // Enable panning if the scaled image is larger than the container
+        } else {
+            cropper.setDragMode('none'); // Disable panning if the scaled image fits within the container
+        }
+    });
+
+
+    
+    imageInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return; // No file selected, possibly canceled the selection
+        }
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            uploadedImage.src = e.target.result;
+            uploadedImage.style.display = 'block';
+            cropButton.style.display = 'inline-block';
+
+            if (cropper) {
+                cropper.destroy();
+            }
+
+            cropper = new Cropper(uploadedImage, {
+              aspectRatio: 1, // Adjust as needed
+              viewMode: 1,
+              movable: true, // Enable image panning
+              zoomable: true, // Enable image zooming
+            });
+
+            // Show rotation controls only after image is loaded into the cropper
+            document.getElementById('rotationControls').style.display = 'block';
+            // Show zoom controls only after image is loaded into the cropper
+            document.getElementById('zoomControls').style.display = 'block';
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+
+    cropButton.addEventListener('click', function() {
+        const croppedCanvas = cropper.getCroppedCanvas();
+        croppedImageCanvas.style.display = 'block';
+        croppedImageCanvas.width = croppedCanvas.width;
+        croppedImageCanvas.height = croppedCanvas.height;
+        const ctx = croppedImageCanvas.getContext('2d');
+        ctx.clearRect(0, 0, croppedImageCanvas.width, croppedImageCanvas.height);
+        ctx.drawImage(croppedCanvas, 0, 0);
+        uploadButton.style.display = 'inline-block'; // Show the upload button after cropping
+    });
+
+
+    uploadButton.addEventListener('click', function() {
+      const smallCanvas = document.createElement('canvas');
+      smallCanvas.width = 80;
+      smallCanvas.height = 80;
+      const ctx = smallCanvas.getContext('2d');
+      ctx.drawImage(croppedImageCanvas, 0, 0, 80, 80);
+
+      smallCanvas.toBlob(function(blob) {
+        const formData = new FormData();
+        formData.append('croppedImage', blob, 'croppedImage.png');
+
+        fetch('/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+        })
+        .catch(error => {
+          console.error(error);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
