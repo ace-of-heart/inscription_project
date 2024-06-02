@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, jsonify
+import os
 
 app = Flask(__name__)
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 KINGDOMS = [
     "Anuradhapura", "Polonnaruwa", "Dambadeniya", "Gampala", "Kotte", "Seethawaka", 
@@ -87,6 +90,20 @@ def kandy():
 def jaffna():
   return render_template('jaffna.html')
 
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'croppedImage' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['croppedImage']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file:
+        filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(filename)
+        return jsonify({'success': True, 'filepath': filename}), 200
+
 
 if __name__ == '__main__':
+  if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
   app.run(host='0.0.0.0', debug=True)
